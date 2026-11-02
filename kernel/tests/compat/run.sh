@@ -1,6 +1,10 @@
 #!/bin/sh
-# Host-only mocked API tests; optional binder tests against a built module.
+# Host-only mocked kernel API tests. The external runner owns binder tests.
 set -eu
+if [ "$#" -ne 0 ]; then
+    echo "usage: $0 (binder tests moved to pd2454-kernelsu-runner/tests/run.sh)" >&2
+    exit 2
+fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
 compiler=${CC:-clang}
 test_dir=$(mktemp -d "${TMPDIR:-/tmp}/ksu-compat.XXXXXX")
@@ -13,11 +17,3 @@ for suite in data probe; do
         "$repo_dir/kernel/tests/compat/$suite/$test_file" -o "$test_dir/$suite"
     "$test_dir/$suite"
 done
-if [ "$#" -eq 1 ]; then
-    "$compiler" -O1 -g -fsanitize=address,undefined -Wall -Wextra \
-        "$repo_dir/tools/pd2454/ksupatch.c" -o "$test_dir/ksupatch"
-    python3 "$repo_dir/tools/pd2454/test_binder.py" "$1" "$test_dir/ksupatch"
-elif [ "$#" -gt 1 ]; then
-    echo "usage: $0 [unrelocated-self-data-module.ko]" >&2
-    exit 2
-fi
