@@ -1,25 +1,17 @@
-# PD2454 function-symbol binder
+# PD2454 ABI reference
 
-`ksupatch.c` binds 50 private/protected function imports for the exact validated Vivo kernel:
+[validated-layout.json](validated-layout.json) contains the 52 target-BTF
+layout values used to audit the compile-only `kernel/tests/layout_audit.c`
+fixture for the exact validated kernel:
 
 ```
 6.6.127-android15-8-g3b723d0e8507-abogki558056638-4k
 ```
 
-Build for the host or Android/AArch64 with the appropriate compiler:
+The function-symbol binder (`ksupatch.c`), build instructions and binder
+failure-path tests are maintained exclusively in the separate
+[PD2454 runner repository](https://github.com/kailashrs/pd2454-kernelsu-runner).
+No binder source or binder test copy is maintained in this repository.
 
-```sh
-clang -O2 -Wall -Wextra tools/pd2454/ksupatch.c -o ksupatch
-```
-
-Invocation:
-
-```sh
-ksupatch <current-boot-slide-hex> <unrelocated-self-data-module.ko> <output.ko>
-```
-
-It requires both `ksu_no_text_poke=1` and `ksu_self_resolved_data=1` metadata and exact target vermagic. It checks the module layout and safe initialization profile, rejects remaining private-data dependencies, and changes only function-symbol records. No instruction rewriting, facts file, section resizing, init stubbing or force-loading is performed.
-
-The supplied slide must come from a trusted same-boot bootstrap. Output contains boot-specific addresses and must never be reused after reboot. The ordinary Linux module loader is still needed, with the required privileges and platform pre-load permissions already established.
-
-Use the matched self-data kernel profile described in [the compatibility notes](../../docs/compat/pd2454-no-text-poke.md). The address table and ABI checks are target-specific; this is not a generic module loader.
+See [the kernel compatibility notes](../../docs/compat/pd2454-no-text-poke.md)
+for the matched module profile and ABI validation limits.

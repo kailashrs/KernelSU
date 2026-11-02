@@ -99,7 +99,7 @@ exact target; changing the release string alone is not an ABI validation.
 
 The Linux loader resolves undefined imports before module init executes.
 The module still needs pre-load binding for 50 private/protected function
-imports. [The matched binder](../../tools/pd2454/README.md) validates the exact
+imports. [The matched binder](https://github.com/kailashrs/pd2454-kernelsu-runner/blob/main/src/ksupatch.c) validates the exact
 profile and changes only those ELF symbol records using a trusted current-boot
 KASLR slide. It does not rewrite instructions or kernel-data references.
 
