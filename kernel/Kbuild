@@ -1,7 +1,9 @@
 kernelsu-objs := core/init.o
 
 kernelsu-objs += feature/kernel_umount.o
+ifneq ($(CONFIG_KSU_SELF_RESOLVED_DATA),y)
 kernelsu-objs += feature/module_blacklist.o
+endif
 kernelsu-objs += feature/sulog.o
 kernelsu-objs += feature/sucompat.o
 
@@ -11,8 +13,13 @@ kernelsu-objs += hook/syscall_event_bridge.o
 kernelsu-objs += hook/syscall_hook_manager.o
 kernelsu-objs += hook/tp_marker.o
 ifeq ($(CONFIG_ARM64),y)
+ifeq ($(CONFIG_KSU_SELF_RESOLVED_DATA),y)
+kernelsu-objs += hook/arm64/no_text_poke.o
+else
 kernelsu-objs += hook/arm64/patch_memory.o
+endif
 kernelsu-objs += hook/arm64/syscall_hook.o
+kernelsu-$(CONFIG_KSU_NO_TEXT_POKE) += hook/arm64/probe_fallback.o
 else ifeq ($(CONFIG_X86_64),y)
 kernelsu-objs += hook/x86_64/patch_memory.o
 kernelsu-objs += hook/x86_64/syscall_hook.o
@@ -53,10 +60,19 @@ kernelsu-objs += supercall/supercall.o
 
 kernelsu-objs += feature/adb_root.o
 
+ifneq ($(CONFIG_KSU_SELF_RESOLVED_DATA),y)
 kernelsu-objs += feature/selinux_hide.o
+endif
+kernelsu-$(CONFIG_KSU_SELF_RESOLVED_DATA) += infra/kernel_data.o
 kernelsu-objs += feature/shell_su_adb_only.o
 
 ifdef KBUILD_EXTMOD
+ifeq ($(CONFIG_KSU_SELF_RESOLVED_DATA),y)
+ccflags-y += -DCONFIG_KSU_SELF_RESOLVED_DATA=1
+endif
+ifeq ($(CONFIG_KSU_NO_TEXT_POKE),y)
+ccflags-y += -DCONFIG_KSU_NO_TEXT_POKE=1
+endif
 ifeq ($(CONFIG_KSU_DISABLE_MANAGER),y)
 ccflags-y += -DCONFIG_KSU_DISABLE_MANAGER=1
 endif

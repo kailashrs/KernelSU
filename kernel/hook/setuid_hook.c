@@ -30,7 +30,9 @@ int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid)
     if (unlikely(is_uid_manager(new_uid))) {
         spin_lock_irq(&current->sighand->siglock);
         ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
+#ifndef CONFIG_KSU_NO_TEXT_POKE
         ksu_set_task_tracepoint_flag(current);
+#endif
         spin_unlock_irq(&current->sighand->siglock);
 
         pr_info("install fd for manager: %d\n", new_uid);
@@ -38,6 +40,7 @@ int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid)
         return 0;
     }
 
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     if (ksu_is_allow_uid_for_current(new_uid)) {
         if (current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
             spin_lock_irq(&current->sighand->siglock);
@@ -49,6 +52,17 @@ int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid)
         ksu_clear_task_tracepoint_flag_if_needed(current);
     }
 
+#else
+    /* There is no dispatcher tracepoint in probe mode. Leave tracepoint
+     * flags owned by other tracing users untouched, but permit the reboot
+     * IPC syscall for authorized apps as in the normal UID transition. */
+    if (ksu_is_allow_uid_for_current(new_uid) &&
+        current->seccomp.mode == SECCOMP_MODE_FILTER && current->seccomp.filter) {
+        spin_lock_irq(&current->sighand->siglock);
+        ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
+        spin_unlock_irq(&current->sighand->siglock);
+    }
+#endif
     // Handle kernel umount
     ksu_handle_umount(old_uid, new_uid);
 

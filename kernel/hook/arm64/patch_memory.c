@@ -188,6 +188,9 @@ static int ksu_patch_text_cb(void *arg)
 
 int ksu_patch_text(void *dst, void *src, size_t len, int flags)
 {
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    return -EOPNOTSUPP;
+#else
     struct patch_text_info info = {
         .dst = dst,
         .src = src,
@@ -197,6 +200,7 @@ int ksu_patch_text(void *dst, void *src, size_t len, int flags)
     };
 
     return stop_machine(ksu_patch_text_cb, &info, cpu_online_mask);
+#endif
 }
 
 /*

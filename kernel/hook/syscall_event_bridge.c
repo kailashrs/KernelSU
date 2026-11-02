@@ -81,6 +81,7 @@ static long __nocfi ksu_hook_execve_common(int orig_nr, const struct pt_regs *re
     struct ksu_sulog_pending_event *pending_root_execve = NULL;
     long ret;
 
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     if (static_branch_unlikely(&ksud_execve_key)) {
         if (execveat) {
             ksu_execveat_hook_ksud(regs);
@@ -89,11 +90,14 @@ static long __nocfi ksu_hook_execve_common(int orig_nr, const struct pt_regs *re
         }
     }
 
+#endif
     if (current_euid().val == 0)
         pending_root_execve = ksu_sulog_capture_root_execve(*filename_user, argv_user, GFP_KERNEL);
 
     if (current->pid != 1 && current_is_init) {
+#ifndef CONFIG_KSU_NO_TEXT_POKE
         ksu_handle_init_mark_tracker(filename_user);
+#endif
         ret = execveat ? ksu_adb_root_handle_execveat((struct pt_regs *)regs) :
                          ksu_adb_root_handle_execve((struct pt_regs *)regs);
         if (ret) {

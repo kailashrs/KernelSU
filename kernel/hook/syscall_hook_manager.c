@@ -23,6 +23,10 @@
 #include "hook/riscv64/syscall_regs.h"
 #endif
 
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+#include "hook/arm64/probe_fallback.h"
+#endif
+
 #ifdef CONFIG_KRETPROBES
 
 static struct kretprobe *init_kretprobe(const char *name, kretprobe_handler_t handler)
@@ -125,10 +129,20 @@ static void ksu_sys_enter_handler(void *data, struct pt_regs *regs, long id)
 }
 #endif
 
-void __init ksu_syscall_hook_manager_init(void)
+int __init ksu_syscall_hook_manager_init(void)
 {
     int ret;
     pr_info("hook_manager: ksu_hook_manager_init called\n");
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    ret = ksu_probe_fallback_init();
+    if (ret) {
+        pr_err("probe_fallback: initialization failed: %d\n", ret);
+        return ret;
+    }
+    ksu_setuid_hook_init();
+    ksu_sucompat_init();
+    return 0;
+#endif
 
 #ifdef CONFIG_KRETPROBES
     syscall_regfunc_rp = init_kretprobe("syscall_regfunc", syscall_regfunc_handler);
@@ -156,11 +170,19 @@ void __init ksu_syscall_hook_manager_init(void)
 
     ksu_setuid_hook_init();
     ksu_sucompat_init();
+    return 0;
 }
 
 void __exit ksu_syscall_hook_manager_exit(void)
 {
     pr_info("hook_manager: ksu_hook_manager_exit called\n");
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    ksu_probe_fallback_exit();
+    ksu_sucompat_exit();
+    ksu_setuid_hook_exit();
+    ksu_syscall_hook_exit();
+    return;
+#endif
 #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
     unregister_trace_sys_enter(ksu_sys_enter_handler, NULL);
     tracepoint_synchronize_unregister();

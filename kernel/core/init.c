@@ -28,6 +28,7 @@
 #include "feature/module_blacklist.h"
 #include "feature/shell_su_adb_only.h"
 #include "infra/symbol_resolver.h"
+#include "infra/kernel_data.h"
 
 #if defined(__x86_64__) && !defined(CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER)
 #include <asm/cpufeature.h>
@@ -90,8 +91,39 @@ bool ksu_bundled = false;
 module_param_named(bundled, ksu_bundled, bool, 0);
 #endif
 
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+#ifndef MODULE
+#error "KSU_NO_TEXT_POKE requires an LKM"
+#endif
+/* LKM .exit.text is present during a failing module init. This __ref
+ * rollback helper intentionally shares teardown with the unload path. */
+static void __ref ksu_undo_failed_hook_init(void)
+{
+    /* Probe initialization rolled back its own registrations. None of the
+     * observer/throne/file-wrapper hooks below it has been initialized. */
+    ksu_allowlist_exit();
+    ksu_supercalls_exit();
+    ksu_shell_su_adb_only_exit();
+#ifndef CONFIG_KSU_NO_TEXT_POKE
+    ksu_selinux_hide_exit();
+#endif
+    ksu_lsm_hook_exit();
+    ksu_adb_root_exit();
+    ksu_sulog_exit();
+    ksu_feature_exit();
+#ifndef CONFIG_KSU_NO_TEXT_POKE
+    ksu_module_blacklist_exit();
+#endif
+    ksu_syscall_hook_exit();
+    put_cred(ksu_cred);
+}
+#endif
+
 int __init kernelsu_init(void)
 {
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    int hook_ret;
+#endif
     pr_info("welcome to KernelSU version " __stringify(KERNEL_SU_VERSION) ", package name " KSU_PACKAGE_NAME "\n");
 #if defined(__x86_64__) && !defined(CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER)
     // If the kernel has the hardening patch, X86_FEATURE_INDIRECT_SAFE must be set
@@ -124,27 +156,45 @@ int __init kernelsu_init(void)
     pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
     pr_alert("*************************************************************");
 #endif
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    if (!ksu_late_loaded) {
+        pr_err("no_text_poke supports late-load only\n");
+        return -EOPNOTSUPP;
+    }
+#endif
     if (allow_shell) {
         pr_alert("shell is allowed at init!");
     }
 
+#ifdef CONFIG_KSU_SELF_RESOLVED_DATA
+    ksu_init_symbol_resolver();
+    hook_ret = ksu_kernel_data_init();
+    if (hook_ret)
+        return hook_ret;
+#endif
     ksu_cred = prepare_creds();
     if (!ksu_cred) {
         pr_err("prepare cred failed!\n");
         return -ENOSYS;
     }
 
+#ifndef CONFIG_KSU_SELF_RESOLVED_DATA
     ksu_init_symbol_resolver();
+#endif
     ksu_syscall_hook_init();
 
     // Block modules early, before vendor modules are loaded in second stage.
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_module_blacklist_init();
+#endif
 
     ksu_feature_init();
     ksu_sulog_init();
     ksu_adb_root_init();
     ksu_lsm_hook_init();
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_selinux_hide_init();
+#endif
     ksu_shell_su_adb_only_init();
 
     ksu_supercalls_init();
@@ -165,7 +215,13 @@ int __init kernelsu_init(void)
         ksu_allowlist_init();
         ksu_load_allow_list();
 
-        ksu_syscall_hook_manager_init();
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+        hook_ret = ksu_syscall_hook_manager_init();
+        if (hook_ret)
+            goto fail_hook_manager;
+#else
+        (void)ksu_syscall_hook_manager_init();
+#endif
 
         ksu_throne_tracker_init();
         ksu_observer_init();
@@ -182,7 +238,7 @@ int __init kernelsu_init(void)
         }
 
     } else {
-        ksu_syscall_hook_manager_init();
+        (void)ksu_syscall_hook_manager_init();
 
         ksu_allowlist_init();
 
@@ -199,6 +255,12 @@ int __init kernelsu_init(void)
 #endif
 #endif
     return 0;
+
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+fail_hook_manager:
+    ksu_undo_failed_hook_init();
+    return hook_ret;
+#endif
 }
 
 void __exit kernelsu_exit(void)
@@ -222,12 +284,16 @@ void __exit kernelsu_exit(void)
     ksu_allowlist_exit();
 
     ksu_shell_su_adb_only_exit();
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_selinux_hide_exit();
+#endif
     ksu_lsm_hook_exit();
     ksu_adb_root_exit();
     ksu_sulog_exit();
     ksu_feature_exit();
+#ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_module_blacklist_exit();
+#endif
 
     put_cred(ksu_cred);
 }
@@ -246,4 +312,12 @@ MODULE_DESCRIPTION("Android KernelSU");
 MODULE_IMPORT_NS("VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver");
 #else
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+#endif
+
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+MODULE_INFO(ksu_no_text_poke, "1");
+#endif
+
+#ifdef CONFIG_KSU_SELF_RESOLVED_DATA
+MODULE_INFO(ksu_self_resolved_data, "1");
 #endif

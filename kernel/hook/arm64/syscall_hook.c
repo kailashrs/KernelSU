@@ -209,6 +209,12 @@ void __init ksu_syscall_hook_init(void)
     if (!ksu_syscall_table)
         return;
 
+#ifdef CONFIG_KSU_NO_TEXT_POKE
+    ksu_dispatcher_nr = -1;
+    pr_info("no_text_poke: syscall table resolved for probes; dispatcher disabled\n");
+    return;
+#endif
+
     // Find one ni_syscall slot for the dispatcher
     if (ksu_find_ni_syscall_slots(&ni_slot, 1) < 1) {
         pr_err("failed to find ni_syscall slot for dispatcher\n");

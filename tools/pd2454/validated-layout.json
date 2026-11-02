@@ -1,0 +1,314 @@
+[
+  {
+    "type": "module",
+    "field": null,
+    "compiled": 1536,
+    "target": 1536
+  },
+  {
+    "type": "module",
+    "field": "init",
+    "compiled": 392,
+    "target": 392
+  },
+  {
+    "type": "module",
+    "field": "exit",
+    "compiled": 1464,
+    "target": 1464
+  },
+  {
+    "type": "task_struct",
+    "field": null,
+    "compiled": 4800,
+    "target": 4800
+  },
+  {
+    "type": "task_struct",
+    "field": "stack",
+    "compiled": 56,
+    "target": 56
+  },
+  {
+    "type": "task_struct",
+    "field": "real_cred",
+    "compiled": 2072,
+    "target": 2072
+  },
+  {
+    "type": "task_struct",
+    "field": "cred",
+    "compiled": 2080,
+    "target": 2080
+  },
+  {
+    "type": "task_struct",
+    "field": "sighand",
+    "compiled": 2176,
+    "target": 2176
+  },
+  {
+    "type": "task_struct",
+    "field": "seccomp",
+    "compiled": 2280,
+    "target": 2280
+  },
+  {
+    "type": "mm_struct",
+    "field": null,
+    "compiled": 1216,
+    "target": 1216
+  },
+  {
+    "type": "mm_struct",
+    "field": "pgd",
+    "compiled": 112,
+    "target": 112
+  },
+  {
+    "type": "pt_regs",
+    "field": null,
+    "compiled": 336,
+    "target": 336
+  },
+  {
+    "type": "pt_regs",
+    "field": "syscallno",
+    "compiled": 280,
+    "target": 280
+  },
+  {
+    "type": "pt_regs",
+    "field": "orig_x0",
+    "compiled": 272,
+    "target": 272
+  },
+  {
+    "type": "kprobe",
+    "field": null,
+    "compiled": 128,
+    "target": 128
+  },
+  {
+    "type": "kprobe",
+    "field": "addr",
+    "compiled": 40,
+    "target": 40
+  },
+  {
+    "type": "kprobe",
+    "field": "pre_handler",
+    "compiled": 64,
+    "target": 64
+  },
+  {
+    "type": "kretprobe",
+    "field": null,
+    "compiled": 176,
+    "target": 176
+  },
+  {
+    "type": "kretprobe",
+    "field": "handler",
+    "compiled": 128,
+    "target": 128
+  },
+  {
+    "type": "kretprobe",
+    "field": "entry_handler",
+    "compiled": 136,
+    "target": 136
+  },
+  {
+    "type": "kretprobe",
+    "field": "data_size",
+    "compiled": 152,
+    "target": 152
+  },
+  {
+    "type": "kretprobe_instance",
+    "field": null,
+    "compiled": 48,
+    "target": 48
+  },
+  {
+    "type": "kretprobe_instance",
+    "field": "data",
+    "compiled": 48,
+    "target": 48
+  },
+  {
+    "type": "pt_regs",
+    "field": "pc",
+    "compiled": 256,
+    "target": 256
+  },
+  {
+    "type": "pt_regs",
+    "field": "regs",
+    "compiled": 0,
+    "target": 0
+  },
+  {
+    "type": "callback_head",
+    "field": null,
+    "compiled": 16,
+    "target": 16
+  },
+  {
+    "type": "callback_head",
+    "field": "func",
+    "compiled": 8,
+    "target": 8
+  },
+  {
+    "type": "cred",
+    "field": "uid",
+    "compiled": 8,
+    "target": 8
+  },
+  {
+    "type": "seccomp_filter",
+    "field": null,
+    "compiled": 240,
+    "target": 240
+  },
+  {
+    "type": "seccomp_filter",
+    "field": "cache",
+    "compiled": 16,
+    "target": 16
+  },
+  {
+    "type": "action_cache",
+    "field": null,
+    "compiled": 128,
+    "target": 128
+  },
+  {
+    "type": "action_cache",
+    "field": "allow_native",
+    "compiled": 0,
+    "target": 0
+  },
+  {
+    "type": "action_cache",
+    "field": "allow_compat",
+    "compiled": 64,
+    "target": 64
+  },
+  {
+    "type": "selinux_state",
+    "field": null,
+    "compiled": 128,
+    "target": 128
+  },
+  {
+    "type": "selinux_state",
+    "field": "enforcing",
+    "compiled": 0,
+    "target": 0
+  },
+  {
+    "type": "selinux_state",
+    "field": "policy",
+    "compiled": 72,
+    "target": 72
+  },
+  {
+    "type": "selinux_state",
+    "field": "policy_mutex",
+    "compiled": 80,
+    "target": 80
+  },
+  {
+    "type": "lsm_blob_sizes",
+    "field": null,
+    "compiled": 32,
+    "target": 32
+  },
+  {
+    "type": "lsm_blob_sizes",
+    "field": "lbs_cred",
+    "compiled": 0,
+    "target": 0
+  },
+  {
+    "type": "lsm_blob_sizes",
+    "field": "lbs_inode",
+    "compiled": 8,
+    "target": 8
+  },
+  {
+    "type": "task_security_struct",
+    "field": null,
+    "compiled": 24,
+    "target": 24
+  },
+  {
+    "type": "task_security_struct",
+    "field": "osid",
+    "compiled": 0,
+    "target": 0
+  },
+  {
+    "type": "task_security_struct",
+    "field": "sid",
+    "compiled": 4,
+    "target": 4
+  },
+  {
+    "type": "task_security_struct",
+    "field": "exec_sid",
+    "compiled": 8,
+    "target": 8
+  },
+  {
+    "type": "task_security_struct",
+    "field": "create_sid",
+    "compiled": 12,
+    "target": 12
+  },
+  {
+    "type": "task_security_struct",
+    "field": "keycreate_sid",
+    "compiled": 16,
+    "target": 16
+  },
+  {
+    "type": "task_security_struct",
+    "field": "sockcreate_sid",
+    "compiled": 20,
+    "target": 20
+  },
+  {
+    "type": "inode_security_struct",
+    "field": null,
+    "compiled": 40,
+    "target": 40
+  },
+  {
+    "type": "inode_security_struct",
+    "field": "sid",
+    "compiled": 28,
+    "target": 28
+  },
+  {
+    "type": "cred",
+    "field": "security",
+    "compiled": 128,
+    "target": 128
+  },
+  {
+    "type": "inode",
+    "field": "i_security",
+    "compiled": 56,
+    "target": 56
+  },
+  {
+    "type": "proc_ns_operations",
+    "field": null,
+    "compiled": 64,
+    "target": 64
+  }
+]

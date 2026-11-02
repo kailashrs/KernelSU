@@ -43,4 +43,25 @@ config KSU_X86_PATCH_SYSCALL_DISPATCHER
 	  Dynamically patch x64's hardened syscall dispatcher to support syscall hooks. This is a
 	  replacement for a kernel source code patch, and is useful for x86_64 LKM mode.
 
+config KSU_NO_TEXT_POKE
+	bool "Late-load ARM64 probe hooks without direct text or syscall-table writes"
+	depends on KSU = m && ARM64 && KPROBES && KRETPROBES
+	default n
+	help
+	  Explicit compatibility mode for protected kernels. Supports late-load
+	  only. Manager UID handoff and sucompat use kernel kprobes/kretprobes.
+	  KernelSU direct patch_text calls return EOPNOTSUPP before stop_machine.
+	  SELinux hiding and module-blacklist mutation are disabled in this mode.
+	  The compatibility LKM stays pinned until reboot; live unload is disabled.
+
+config KSU_SELF_RESOLVED_DATA
+	bool "Resolve protected kernel data into typed module-owned pointers"
+	depends on KSU_NO_TEXT_POKE
+	default n
+	help
+	  Resolve SELinux state, LSM blob offsets and mount namespace operations
+	  before credentials or hooks are initialized. No external instruction
+	  rewriting or facts snapshots are needed. Private function binding is
+	  still performed by the pre-load symbol fixer.
+
 endmenu
