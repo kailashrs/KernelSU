@@ -124,17 +124,19 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
      * uapi magics) hands a [ksu_driver] fd to the caller through
      * task_work, whatever the syscall itself returns. Any unprivileged
      * process could probe for the appearing fd. Only callers that could
-     * legitimately reach su (root, manager, allowlisted UIDs such as the
-     * allow_shell shell) may obtain the driver fd; unrelated apps observe
-     * stock behavior. This mirrors allowed_for_su(), which also gates
-     * KSU_IOCTL_GRANT_ROOT, so ksud's grant_root()/debug su flows keep
-     * working. Silent by design: no log line on refusal.
+     * legitimately reach su may obtain the driver fd: any UID-0 process
+     * (including custom-context root sessions outside u:r:ksu:s0), the
+     * manager, and allowlisted UIDs such as the allow_shell shell.
+     * Unrelated apps observe stock behavior. This is uid-0 OR the same
+     * allowed_for_su() predicate that gates KSU_IOCTL_GRANT_ROOT, so
+     * ksud's grant_root()/debug su flows keep working. Silent by design:
+     * no log line on refusal.
      */
     if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
         struct ksu_install_fd_tw *tw;
         unsigned long arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
 
-        if (!allowed_for_su())
+        if (current_uid().val != 0 && !allowed_for_su())
             return 0;
 
         tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
