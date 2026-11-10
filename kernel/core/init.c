@@ -76,6 +76,44 @@ __attribute__((naked)) int __init kernelsu_init_early(void)
 struct cred *ksu_cred;
 bool ksu_late_loaded;
 
+#ifdef CONFIG_KSU_HIDE_MODULE
+/*
+ * Anti-fingerprinting: unlink THIS_MODULE from the kernel module list so
+ * /proc/modules and module kallsyms names stop advertising it. Upstream
+ * already dropped /sys/module via kobject_del above; this closes the last
+ * list-visible artifact. module_mutex and modules are not exported to
+ * modules, so they are resolved through the private kallsyms channel used
+ * for other protected kernel data. The NO_TEXT_POKE profile pins the module
+ * until reboot, so no unload path can hit a missing list node; the list
+ * head is re-initialized and an extra reference is taken regardless.
+ */
+static void ksu_hide_module(void)
+{
+    static struct mutex *module_mutex_ptr;
+    static struct list_head *modules_list;
+    struct module *mod = THIS_MODULE;
+
+    if (!modules_list)
+        modules_list = (struct list_head *)find_kernel_symbol_exact("modules");
+    if (!module_mutex_ptr)
+        module_mutex_ptr = (struct mutex *)find_kernel_symbol_exact("module_mutex");
+
+    if (!modules_list || !module_mutex_ptr) {
+        pr_err("hide: module list symbols unresolved\n");
+        return;
+    }
+
+    mutex_lock(module_mutex_ptr);
+    if (!list_empty(&mod->list)) {
+        list_del_rcu(&mod->list);
+        INIT_LIST_HEAD(&mod->list);
+    }
+    mutex_unlock(module_mutex_ptr);
+
+    __module_get(mod);
+}
+#endif
+
 #ifdef CONFIG_KSU_DEBUG
 bool allow_shell = true;
 #else
@@ -252,6 +290,9 @@ int __init kernelsu_init(void)
 #ifdef MODULE
 #ifndef CONFIG_KSU_DEBUG
     kobject_del(&THIS_MODULE->mkobj.kobj);
+#ifdef CONFIG_KSU_HIDE_MODULE
+    ksu_hide_module();
+#endif
 #endif
 #endif
     return 0;

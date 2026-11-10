@@ -13,6 +13,7 @@
 
 #include "uapi/supercall.h"
 #include "supercall/internal.h"
+#include "manager/manager_identity.h"
 #include "arch.h"
 #include "util.h"
 #include "klog.h" // IWYU pragma: keep
@@ -119,9 +120,20 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
     int magic1 = (int)PT_REGS_SYSCALL_PARM1(real_regs);
     int magic2 = (int)PT_REGS_PARM2(real_regs);
 
+    /*
+     * Anti-fingerprinting: the install handshake (reboot with the public
+     * uapi magics) hands a [ksu_driver] fd to the caller through
+     * task_work, whatever the syscall itself returns. Any unprivileged
+     * process could probe for the appearing fd. Only root or the manager
+     * may obtain the driver fd; everyone else observes stock behavior.
+     * Silent by design: no log line on refusal.
+     */
     if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
         struct ksu_install_fd_tw *tw;
         unsigned long arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
+
+        if (current_uid().val != 0 && !is_manager())
+            return 0;
 
         tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
         if (!tw)

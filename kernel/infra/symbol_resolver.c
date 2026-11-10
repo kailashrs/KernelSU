@@ -4,6 +4,7 @@
 #include <linux/version.h>
 
 #include "infra/symbol_resolver.h"
+#include "klog.h"
 
 // https://github.com/torvalds/linux/commit/89245600941e4e0f87d77f60ee269b5e61ef4e49
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)

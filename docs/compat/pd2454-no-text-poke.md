@@ -23,6 +23,30 @@ The profile requires ARM64 kprobes/kretprobes and runtime kernel data-symbol
 availability (`CONFIG_KALLSYMS_ALL=y` on the validated target). It supports
 late loading only. The ordinary configuration remains separately available.
 
+### Anti-fingerprinting options (hardening profile)
+
+```
+CONFIG_KSU_QUIET=y
+CONFIG_KSU_HIDE_MODULE=y
+```
+
+`KSU_QUIET` compiles out pr_info/pr_warn call sites (boot banner, command
+dump, fd-install notices, ioctl denial noise), so neither the world-readable
+dmesg ring nor the module image carries routine "KernelSU:" markers; pr_err
+survives for genuine failures. `KSU_HIDE_MODULE` unlinks the module from the
+kernel module list after successful init (upstream already drops /sys/module
+via kobject_del), removing the `/proc/modules` line and module kallsyms
+names. The module stays pinned until reboot in this profile.
+
+With `KSU_HIDE_MODULE=y`, a root-side liveness check must use the gated
+supercall handshake instead of `/proc/modules`: the paired runner ships
+`ksuquery` (reboot-magic fd install + `KSU_IOCTL_GET_INFO`) and
+`ksu_exposure_probe` (unprivileged visibility matrix) for exactly that, and
+its stage writes a boot-scoped `ksu-live.stamp` for the host-side guards.
+The fd-install kprobe now honors root/manager callers only, and the
+previously `always_allow` ioctls (`GET_INFO`, `GET_INFO_LEGACY`,
+`CHECK_SAFEMODE`) are `manager_or_root`; Manager and ksud pass unchanged.
+
 ### Probe hooks
 
 `ksu_patch_text()` refuses direct writes with `-EOPNOTSUPP`, before entering

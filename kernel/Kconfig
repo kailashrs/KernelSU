@@ -64,4 +64,27 @@ config KSU_SELF_RESOLVED_DATA
 	  rewriting or facts snapshots are needed. Private function binding is
 	  still performed by the pre-load symbol fixer.
 
+config KSU_QUIET
+	bool "Compile out routine module logging"
+	depends on KSU
+	default n
+	help
+	  Anti-fingerprinting: drop pr_info/pr_warn call sites (boot banner,
+	  hook-registration notices, fd-install notices, ioctl denial noise)
+	  so neither the ring buffer nor the module image carries routine
+	  "KernelSU:" markers. pr_err is kept for genuine failure paths.
+	  Every unauthenticated-triggerable log line is in the dropped set.
+
+config KSU_HIDE_MODULE
+	bool "Remove the module from /proc/modules and kallsyms after init"
+	depends on KSU && MODULE
+	default n
+	help
+	  Anti-fingerprinting: unlink THIS_MODULE from the kernel module list
+	  (resolved via kallsyms; module_mutex/modules are not exported) once
+	  initialization succeeded. /sys/module was already dropped by
+	  kobject_del. Hides the module line from /proc/modules and module
+	  symbols from /proc/kallsyms names. The module stays pinned until
+	  reboot, matching the KSU_NO_TEXT_POKE no-unload profile.
+
 endmenu
