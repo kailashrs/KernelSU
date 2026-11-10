@@ -77,7 +77,7 @@ config KSU_QUIET
 
 config KSU_HIDE_MODULE
 	bool "Remove the module from /proc/modules and kallsyms after init"
-	depends on KSU && MODULE
+	depends on KSU = m
 	default n
 	help
 	  Anti-fingerprinting: unlink THIS_MODULE from the kernel module list

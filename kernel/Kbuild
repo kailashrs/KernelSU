@@ -73,6 +73,12 @@ endif
 ifeq ($(CONFIG_KSU_NO_TEXT_POKE),y)
 ccflags-y += -DCONFIG_KSU_NO_TEXT_POKE=1
 endif
+ifeq ($(CONFIG_KSU_QUIET),y)
+ccflags-y += -DCONFIG_KSU_QUIET=1
+endif
+ifeq ($(CONFIG_KSU_HIDE_MODULE),y)
+ccflags-y += -DCONFIG_KSU_HIDE_MODULE=1
+endif
 ifeq ($(CONFIG_KSU_DISABLE_MANAGER),y)
 ccflags-y += -DCONFIG_KSU_DISABLE_MANAGER=1
 endif
