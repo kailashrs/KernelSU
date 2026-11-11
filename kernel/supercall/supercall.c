@@ -1,4 +1,5 @@
 #include <linux/anon_inodes.h>
+#include <linux/cred.h>
 #include <linux/err.h>
 #include <linux/fdtable.h>
 #include <linux/file.h>
