@@ -25,6 +25,7 @@
 #include "hook/syscall_hook.h"
 #include "feature/adb_root.h"
 #include "feature/selinux_hide.h"
+#include "feature/selinux_oracle.h"
 #include "feature/module_blacklist.h"
 #include "feature/shell_su_adb_only.h"
 #include "infra/symbol_resolver.h"
@@ -149,6 +150,7 @@ static void __ref ksu_undo_failed_hook_init(void)
 #ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_selinux_hide_exit();
 #endif
+    ksu_selinux_oracle_exit();
     ksu_lsm_hook_exit();
     ksu_adb_root_exit();
     ksu_sulog_exit();
@@ -291,6 +293,8 @@ int __init kernelsu_init(void)
         ksu_file_wrapper_init();
     }
 
+    ksu_selinux_oracle_init();
+
 #ifdef MODULE
 #ifndef CONFIG_KSU_DEBUG
     kobject_del(&THIS_MODULE->mkobj.kobj);
@@ -332,6 +336,7 @@ void __exit kernelsu_exit(void)
 #ifndef CONFIG_KSU_NO_TEXT_POKE
     ksu_selinux_hide_exit();
 #endif
+    ksu_selinux_oracle_exit();
     ksu_lsm_hook_exit();
     ksu_adb_root_exit();
     ksu_sulog_exit();

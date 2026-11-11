@@ -87,4 +87,24 @@ config KSU_HIDE_MODULE
 	  symbols from /proc/kallsyms names. The module stays pinned until
 	  reboot, matching the KSU_NO_TEXT_POKE no-unload profile.
 
+config KSU_HIDE_SELINUX_ORACLE
+	bool "Deny the app_zygote selinuxfs policy oracles"
+	depends on KSU && ARM64
+	default n
+	help
+	  Anti-fingerprinting: after the KernelSU rules are merged, remove
+	  app_zygote's compute_av permission on the kernel security object
+	  from the live policy and filter KernelSU-owned contexts out of
+	  selinuxfs writes. The only app-reachable way to ask the kernel
+	  whether KernelSU's SELinux types and AVC rules exist is an
+	  app_zygote isolated process writing to /sys/fs/selinux/access and
+	  /sys/fs/selinux/context. The policy deny makes the access probe
+	  fail with EACCES, and the sel_write_context kprobe returns EINVAL
+	  for non-root callers naming ksu/ksu_* types, so detectors see an
+	  informational error or a clean policy instead of a KernelSU
+	  signature. check_context stays in place because
+	  selinux_android_setcontext() needs it to specialize useAppZygote
+	  children; enforcement, labeling and binder/file access are
+	  unaffected.
+
 endmenu

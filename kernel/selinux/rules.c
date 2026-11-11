@@ -45,6 +45,38 @@ static void reset_avc_cache()
     selinux_xfrm_notify_policyload();
 }
 
+#ifdef CONFIG_KSU_HIDE_SELINUX_ORACLE
+/*
+ * The only app-reachable SELinux policy oracle is an app_zygote isolated
+ * process. sel_write_access() requires SECURITY__COMPUTE_AV on
+ * SECINITSID_SECURITY (the kernel object type), and stock policy grants
+ * app_zygote that permission. Root detectors use the selinuxfs access file to
+ * ask the live policy whether KernelSU's AVC rules exist.
+ *
+ * Remove compute_av from the policy we are about to publish, so the access
+ * writes fail with EACCES and the detector classifies the probe as an
+ * informational error instead of a KernelSU signature. Only app_zygote loses
+ * the permission: enforcement, labeling, binder and file access are
+ * untouched, and isolated services never compute AVC decisions by hand.
+ *
+ * check_context is deliberately kept. selinux_android_setcontext() calls
+ * security_check_context() while specializing every useAppZygote child, so
+ * denying it aborts the child before its service starts. The context oracle
+ * is instead filtered by the sel_write_context kprobe in
+ * feature/selinux_oracle.c, which hides only KernelSU-owned types.
+ */
+static void hide_selinux_policy_oracles(struct policydb *db)
+{
+    if (!ksu_exists(db, "app_zygote") || !ksu_exists(db, "kernel")) {
+        pr_info("selinux oracle deny skipped: required types missing\n");
+        return;
+    }
+
+    if (!ksu_deny(db, "app_zygote", "kernel", "security", "compute_av"))
+        pr_err("failed to deny security:compute_av for app_zygote\n");
+}
+#endif
+
 void apply_kernelsu_rules()
 {
     struct selinux_policy *pol, *old_pol;
@@ -160,6 +192,10 @@ void apply_kernelsu_rules()
     // Allow system server kill su process
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
+
+#ifdef CONFIG_KSU_HIDE_SELINUX_ORACLE
+    hide_selinux_policy_oracles(db);
+#endif
 
     rcu_assign_pointer(ksu_kernel_selinux_state()->policy, pol);
     synchronize_rcu();

@@ -63,6 +63,7 @@ kernelsu-objs += feature/adb_root.o
 ifneq ($(CONFIG_KSU_SELF_RESOLVED_DATA),y)
 kernelsu-objs += feature/selinux_hide.o
 endif
+kernelsu-$(CONFIG_KSU_HIDE_SELINUX_ORACLE) += feature/selinux_oracle.o
 kernelsu-$(CONFIG_KSU_SELF_RESOLVED_DATA) += infra/kernel_data.o
 kernelsu-objs += feature/shell_su_adb_only.o
 
@@ -78,6 +79,9 @@ ccflags-y += -DCONFIG_KSU_QUIET=1
 endif
 ifeq ($(CONFIG_KSU_HIDE_MODULE),y)
 ccflags-y += -DCONFIG_KSU_HIDE_MODULE=1
+endif
+ifeq ($(CONFIG_KSU_HIDE_SELINUX_ORACLE),y)
+ccflags-y += -DCONFIG_KSU_HIDE_SELINUX_ORACLE=1
 endif
 ifeq ($(CONFIG_KSU_DISABLE_MANAGER),y)
 ccflags-y += -DCONFIG_KSU_DISABLE_MANAGER=1

@@ -28,6 +28,7 @@ late loading only. The ordinary configuration remains separately available.
 ```
 CONFIG_KSU_QUIET=y
 CONFIG_KSU_HIDE_MODULE=y
+CONFIG_KSU_HIDE_SELINUX_ORACLE=y
 ```
 
 `KSU_QUIET` compiles out pr_info/pr_warn call sites (boot banner, command
@@ -37,6 +38,20 @@ survives for genuine failures. `KSU_HIDE_MODULE` unlinks the module from the
 kernel module list after successful init (upstream already drops /sys/module
 via kobject_del), removing the `/proc/modules` line and module kallsyms
 names. The module stays pinned until reboot in this profile.
+
+`KSU_HIDE_SELINUX_ORACLE` closes the two selinuxfs policy oracles reachable
+from an app_zygote isolated process. It removes app_zygote's `compute_av`
+permission on the kernel security object while the merged policy is being
+published, so `/sys/fs/selinux/access` writes fail with EACCES. It also
+registers a kprobe on `sel_write_context` that returns `-EINVAL` when a
+non-root caller names a `ksu`/`ksu_*` type, so `/sys/fs/selinux/context`
+cannot confirm KernelSU's SELinux types. `check_context` itself is kept:
+`selinux_android_setcontext()` calls `security_check_context()` while
+specializing every `useAppZygote` child, so denying it aborts the child
+before its service starts. DirtySepolicy-style sweeps and the KKND oracle
+therefore see an informational error or a clean policy rather than a root
+signature. Enforcement, file labeling, binder and normal app access are
+unchanged; only the KernelSU-owned type names are filtered.
 
 With `KSU_HIDE_MODULE=y`, a root-side liveness check must use the gated
 supercall handshake instead of `/proc/modules`: the paired runner ships
